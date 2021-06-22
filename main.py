@@ -1,7 +1,7 @@
 import logging
 
-from telegram import Update, ForceReply
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from telegram import Update, ForceReply, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, CallbackQueryHandler
 
 # Enable logging
 logging.basicConfig(
@@ -15,21 +15,40 @@ logger = logging.getLogger(__name__)
 # context.
 def start(update: Update, context: CallbackContext) -> None:
     """Send a message when the command /start is issued."""
-    user = update.effective_user
-    update.message.reply_markdown_v2(
-        fr'Hi {user.mention_markdown_v2()}\!',
-        reply_markup=ForceReply(selective=True),
-    )
+    # user = update.effective_user
+    # update.message.reply_markdown_v2(
+    #     fr'Hi {user.mention_markdown_v2()}\!',
+    #     reply_markup=ForceReply(selective=True),
+    # )
+    keyboard = [
+        [
+            InlineKeyboardButton("Option 1", callback_data='студент'),
+            InlineKeyboardButton("Option 2", callback_data='работяга'),
+        ],
+        [InlineKeyboardButton("Option 3", callback_data='мажор')],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
+    update.message.reply_text('Please choose:', reply_markup=reply_markup)
+
+def button(update: Update, context: CallbackContext) -> None:
+    """Parses the CallbackQuery and updates the message text."""
+    query = update.callback_query
+
+    # CallbackQueries need to be answered, even if no notification to the user is needed
+    # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
+    query.answer()
+
+    query.edit_message_text(text=f"Selected option: {query.data}")
 
 def help_command(update: Update, context: CallbackContext) -> None:
     """Send a message when the command /help is issued."""
     update.message.reply_text('Help!')
 
 
-def echo(update: Update, context: CallbackContext) -> None:
-    """Echo the user message."""
-    update.message.reply_text(update.message.text)
+# def echo(update: Update, context: CallbackContext) -> None:
+#   """Echo the user message."""
+#  update.message.reply_text(update.message.text)
 
 
 def main() -> None:
@@ -42,10 +61,11 @@ def main() -> None:
 
     # on different commands - answer in Telegram
     dispatcher.add_handler(CommandHandler("start", start))
+    dispatcher.add_handler(CallbackQueryHandler(button))
     dispatcher.add_handler(CommandHandler("help", help_command))
 
     # on non command i.e message - echo the message on Telegram
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, echo))
+#    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, echo))
 
     # Start the Bot
     updater.start_polling()
